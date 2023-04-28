@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :genres
+  resources :platforms
   resources :involved_companies
   resources :games
   resources :companies
