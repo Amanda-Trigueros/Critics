@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
+ActiveRecord::Schema[7.0].define(version: 2023_04_28_184719) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -50,6 +50,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "games_count", default: 0
+    t.index ["name"], name: "index_companies_on_name", unique: true
   end
 
   create_table "critics", force: :cascade do |t|
@@ -73,13 +74,25 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
     t.bigint "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_games_on_name", unique: true
     t.index ["parent_id"], name: "index_games_on_parent_id"
+  end
+
+  create_table "games_genres", id: false, force: :cascade do |t|
+    t.bigint "game_id", null: false
+    t.bigint "genre_id", null: false
+  end
+
+  create_table "games_platforms", id: false, force: :cascade do |t|
+    t.bigint "game_id", null: false
+    t.bigint "platform_id", null: false
   end
 
   create_table "genres", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_genres_on_name", unique: true
   end
 
   create_table "involved_companies", force: :cascade do |t|
@@ -90,6 +103,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_involved_companies_on_company_id"
+    t.index ["game_id", "company_id"], name: "index_involved_companies_on_game_id_and_company_id", unique: true
     t.index ["game_id"], name: "index_involved_companies_on_game_id"
   end
 
@@ -98,6 +112,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
     t.integer "category"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_platforms_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -107,6 +122,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_04_28_173528) do
     t.integer "critics_count", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "birth_date"
+    t.string "first_name"
+    t.string "last_name"
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["username"], name: "index_users_on_username", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
