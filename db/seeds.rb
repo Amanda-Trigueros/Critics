@@ -18,6 +18,8 @@ Company.destroy_all
 Platform.destroy_all
 Genre.destroy_all
 Game.destroy_all
+Users.destroy_all
+Critics.destroy_all
 
 User.find_or_create_by(username: "user_test") do |user|
   user.email = "user@test.com"
