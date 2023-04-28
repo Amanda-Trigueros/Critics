@@ -6,6 +6,12 @@
 #   movies = Movie.create([{ name: "Star Wars" }, { name: "Lord of the Rings" }])
 #   Character.create(name: "Luke", movie: movies.first)
 
+require "json"
+
+companies_data = JSON.parse(File.read("db/data/companies.json"))
+games_data = JSON.parse(File.read("db/data/games.json"))
+genres_data = JSON.parse(File.read("db/data/genres.json"))
+platforms_data = JSON.parse(File.read("db/data/platforms.json"))
 
 puts "Start seeding"
 Company.destroy_all
@@ -13,55 +19,89 @@ Platform.destroy_all
 Genre.destroy_all
 Game.destroy_all
 
-ActiveRecord::Base.connection.reset_pk_sequence!('companies')
-ActiveRecord::Base.connection.reset_pk_sequence!('critics')
-ActiveRecord::Base.connection.reset_pk_sequence!('games')
+User.find_or_create_by(username: "user_test") do |user|
+  user.email = "user@test.com"
+  user.birth_date = "1990-01-01"
+  user.first_name = "User"
+  user.last_name = "Test"
+  user.password = "qwerty"
+  user.password_confirmation = "qwerty"
+end
 
-puts "Seeding Companies"
+puts "Seeding companies"
+companies_data.each do |company_data|
+  new_company = Company.new(company_data)
+  puts "Company not created. Errors: #{new_company.errors.full_messages}" unless new_company.save
+end
 
-sony = Company.create(name: "Sony Interactive Entertainment", description: "Formerly: Sony Computer Entertainment.", start_date: "1993", country: "Japan")
-sony.cover.attach(io: File.open('app/assets/images/sony.png'), filename: 'sony.png')
+puts "Seeding platforms"
+platforms_data.each do |platform_data|
+  new_platform = Platform.new(platform_data)
+  puts "Platform not created. Errors: #{new_platform.errors.full_messages}" unless new_platform.save
+end
 
-nintendo = Company.create(name: "Nintendo", description: "Nintendo Co., Ltd. is a multinational corporation located in Kyoto, Japan. Founded....", start_date: "1916", country: "Japan")
-nintendo.cover.attach(io: File.open('app/assets/images/nintendo.png'), filename: 'nintendo.png')
+puts "Seeding genres"
+genres_data.each do |name|
+  new_genre = Genre.new(name: name)
+  puts "Genre not created. Errors: #{new_genre.errors.full_messages}" unless new_genre.save
+end
 
-activision = Company.create(name: "Activision", description: "For more than 30 years, Activision has been changing the way people play. In the process, we have built...", start_date: "1979", country: "United States of America")
-activision.cover.attach(io: File.open('app/assets/images/activision.png'), filename: 'activision.png')
+puts "Seeding main games and relationships"
 
-puts "Seeding Games"
+main_games_data = games_data.select {|game| game["parent"].nil? }
 
-last = Game.create(name: "The Last of Us", summary: "A third person shooter/stealth/survival hybrid, in which twenty years after the outbreak of a par...", release_date: "2013")
-last.cover.attach(io: File.open('app/assets/images/last.png'), filename: 'last.png')
+main_games_data.each do |game|
+  game_data = game.slice("name", "summary", "release_date", "category", "rating")
+  new_game = Game.new(game_data)
+  puts "Game not created. Errors: #{new_game.errors.full_messages}" unless new_game.save
 
-borderland = Game.create(name: "Borderlands 3", summary: "Borderlands, in which twenty years after the outbreak of a par...", release_date: "2013")
-borderland.cover.attach(io: File.open('app/assets/images/borderland.png'), filename: 'borderland.png')
+  game["genres"].each do |genre_name|
+    new_game.genres << Genre.find_by(name: genre_name)
+  end
 
-tomb = Game.create(name: "Tomb Raider", summary: "The original shooter-looter returns, packing bazillions of guns and a mayhem-fueled adventure! Bl...", release_date: "2010")
-tomb.cover.attach(io: File.open('app/assets/images/tomb.png'), filename: 'tomp.png')
+  game["platforms"].each do |platform|
+    new_game.platforms << Platform.find_by(name: platform["name"])
+  end
 
-zelda = Game.create(name: "Zelda", summary: "Zelda is the original shooter-looter returns, packing bazillions of guns and a mayhem-fueled adventure! Bl...", release_date: "2003")
-zelda.cover.attach(io: File.open('app/assets/images/zelda.png'), filename: 'zelda.png')
+  game["involved_companies"].each do |involved_company_data|
+    company = Company.find_by(name: involved_company_data["name"])
 
-mario = Game.create(name: "Mario", summary: "Mario shooter-looter returns, packing bazillions of guns and a mayhem-fueled adventure! Bl...", release_date: "2001")
-mario.cover.attach(io: File.open('app/assets/images/mario.png'), filename: 'mario.png')
+    new_involved_company = InvolvedCompany.new( game: new_game,
+                                                company: company,
+                                                publisher: involved_company_data["publisher"], 
+                                                developer: involved_company_data["developer"]
+                                              )
+    puts "Involved Company not created. Errors: #{new_involved_company.errors.full_messages}" unless new_involved_company.save
+  end
+end
 
-puts "Seeding Critics"
-critic1 = Critic.create(title: "Critic 1", body: "This is an example of a critic for this company." , criticable: sony)
-critic2 = Critic.create(title: "Critic 2", body: "This is an example of a critic for this game." , criticable: last)
+puts "Seeding expansion games and relationships"
+expansions_games_data = games_data.select {|game| !game["parent"].nil? }
 
-puts "Seeding Users"
-user = User.create(username: "user_test", email: "user@test.com", birth_date: "1990-01-01", first_name: "User", last_name:"Test")
-amanda = User.create(username: "amanda01", email: "amanda@test.com", birth_date: "1997-01-16", first_name: "Amandar", last_name:"Trigueros")
-rossio = User.create(username: "rossio02", email: "rossio@test.com", birth_date: "1990-01-01", first_name: "Rossío", last_name:"Lachos")
-pedro = User.create(username: "pedro03", email: "pedro@test.com", birth_date: "1995-01-02", first_name: "Pedro", last_name:"Arias")
+expansions_games_data.each do |game|
+  parent_game = Game.find_by(name: game["parent"])
 
-puts "Seeding Genres"
-shooter = Genre.create(name: "Shooter")
-sport = Genre.create(name: "Sport")
-adventure = Genre.create(name:"Adventure")
-simulator = Genre.create(name:"Simulator")
+  game_data = game.slice("name", "summary", "release_date", "category", "rating")
+  new_game = Game.new(game_data)
+  new_game.parent = parent_game
+  puts "Game not created. Errors: #{new_game.errors.full_messages}" unless new_game.save
 
-puts "Seeding Platforms"
-play = Platform.create(name: "Play Station 4")
-xbox = Platform.create(name: "Xbox 360")
+  game["genres"].each do |genre_name|
+    new_game.genres << Genre.find_by(name: genre_name)
+  end
 
+  game["platforms"].each do |platform|
+    new_game.platforms << Platform.find_by(name: platform["name"])
+  end
+
+  game["involved_companies"].each do |involved_company_data|
+    company = Company.find_by(name: involved_company_data["name"])
+
+    new_involved_company = InvolvedCompany.new( game: new_game,
+                                                company: company,
+                                                publisher: involved_company_data["publisher"], 
+                                                developer: involved_company_data["developer"]
+                                              )
+    puts "Involved Company not created. Errors: #{new_involved_company.errors.full_messages}" unless new_involved_company.save
+  end
+end
