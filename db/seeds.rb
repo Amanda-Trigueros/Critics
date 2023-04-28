@@ -56,3 +56,12 @@ rossio = User.create(username: "rossio02", email: "rossio@test.com", birth_date:
 pedro = User.create(username: "pedro03", email: "pedro@test.com", birth_date: "1995-01-02", first_name: "Pedro", last_name:"Arias")
 
 puts "Seeding Genres"
+shooter = Genre.create(name: "Shooter")
+sport = Genre.create(name: "Sport")
+adventure = Genre.create(name:"Adventure")
+simulator = Genre.create(name:"Simulator")
+
+puts "Seeding Platforms"
+play = Platform.create(name: "Play Station 4")
+xbox = Platform.create(name: "Xbox 360")
+
